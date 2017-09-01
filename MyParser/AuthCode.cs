@@ -19,6 +19,9 @@ namespace MyParser
         }
 
         public string Code { get; set; }
+        private bool isDragging = false;
+        private Point lastCursor;
+        private Point lastForm;
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -26,5 +29,35 @@ namespace MyParser
             Close();
         }
 
+        private void close_button_Click(object sender, EventArgs e)
+        {
+            System.Windows.Forms.Application.Exit();
+        }
+
+        private void roll_button_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Minimized;
+        }
+
+        private void Form_MouseDown(object sender, MouseEventArgs e)
+        {
+            isDragging = true;
+
+            lastCursor = Cursor.Position;
+            lastForm = this.Location;
+        }
+
+        private void Form_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                this.Location = Point.Add(lastForm, new Size(Point.Subtract(Cursor.Position, new Size(lastCursor))));
+            }
+        }
+
+        private void Form_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
+        }
     }
 }

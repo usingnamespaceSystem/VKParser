@@ -24,10 +24,13 @@ namespace MyParser
         public Form1()
         {
             InitializeComponent();
+            panel_parse.Visible = false;
         }
 
         public VkApi Api { get; set; }
-
+        private bool isDragging = false;
+        private System.Drawing.Point lastCursor;
+        private System.Drawing.Point lastForm;
         Microsoft.Office.Interop.Excel.Application app;
         Workbook wb;
         Worksheet ws;
@@ -38,6 +41,10 @@ namespace MyParser
             {
                 Auth logIn = new Auth(login.Text, pwd.Text);
                 Api = logIn.Api;
+
+                panel_auth.Visible = false;
+                panel_parse.Location = new System.Drawing.Point(200, 131);
+                panel_parse.Visible = true;
             }
             catch
             {
@@ -167,6 +174,37 @@ namespace MyParser
             wb.Close(0);
             app.Quit();
             System.Runtime.InteropServices.Marshal.ReleaseComObject(app);
+        }
+
+        private void close_button_Click(object sender, EventArgs e)
+        {
+           System.Windows.Forms.Application.Exit();
+        }
+
+        private void roll_button_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Minimized;
+        }
+
+        private void Form_MouseDown(object sender, MouseEventArgs e)
+        {
+            isDragging = true;
+
+            lastCursor = Cursor.Position;
+            lastForm = this.Location;
+        }
+
+        private void Form_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                this.Location = System.Drawing.Point.Add(lastForm, new Size(System.Drawing.Point.Subtract(Cursor.Position, new Size(lastCursor))));
+            }
+        }
+
+        private void Form_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
         }
     }
 }
