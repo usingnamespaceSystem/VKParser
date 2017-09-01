@@ -47,8 +47,8 @@ namespace MyParser
 
         private void download_Click(object sender, EventArgs e)
         {
-            //try
-            //{
+            try
+            {
                 Regex uri = new Regex(@".+_(\d+)");
                 string album_id = uri.Matches(AlbumName.Text)[0].Groups[1].ToString();
 
@@ -60,7 +60,7 @@ namespace MyParser
                 if (fd.ShowDialog(this) == DialogResult.OK)
                 {
                     path = fd.InitialDirectory + fd.FileName;
-                    app = new Microsoft.Office.Interop.Excel.Application(); 
+                    app = new Microsoft.Office.Interop.Excel.Application();
                     wb = app.Workbooks.Open(path);
                     ws = wb.Worksheets[1];
 
@@ -94,16 +94,14 @@ namespace MyParser
                     {
                         AlbumId = PhotoAlbumType.Id(Convert.ToInt64(album_id))
                     });
-                    
-                    ws.Columns.Insert(1,1);
-                    ws.Cells[1, 1].Value = "Миниатюра";
+
                     ws.Rows[1].EntireRow.RowHeight = ws.Rows[2].EntireRow.RowHeight;
 
                     int count = 0;
 
                     foreach (var photo in photos_in_album)
                     {
-                        if (count > 5)  return; 
+                        if (count > 5) return;
 
                         string[] all_description = new string[2];
                         all_description = photo.Text.Split(new string[] { "\n" }, StringSplitOptions.None);
@@ -119,7 +117,7 @@ namespace MyParser
                             string path_to_image = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), rowIdx.ToString() + ".jpg");
                             client.DownloadFile(new Uri(photo.Photo604.ToString()), path_to_image);
 
-                            ws.Shapes.AddPicture(path_to_image, MsoTriState.msoFalse, MsoTriState.msoCTrue, ws.Columns[img_col].Left , (rowIdx - 1) * ws.Rows[2].EntireRow.RowHeight + 2, photo.Width / (photo.Height / ws.Rows[2].EntireRow.RowHeight) , ws.Rows[2].EntireRow.RowHeight - 2);
+                            ws.Shapes.AddPicture(path_to_image, MsoTriState.msoFalse, MsoTriState.msoCTrue, ws.Columns[img_col].Left, (rowIdx - 1) * ws.Rows[2].EntireRow.RowHeight + 2, photo.Width / (photo.Height / ws.Rows[2].EntireRow.RowHeight), ws.Rows[2].EntireRow.RowHeight - 2);
 
                             if (File.Exists(path_to_image))
                                 File.Delete(path_to_image);
@@ -135,15 +133,12 @@ namespace MyParser
                     }
 
                     ws.Rows[1].EntireRow.AutoFit();
-
-
-                    ws.Columns.Delete(XlInsertShiftDirection.xlShiftToRight);
                 }
-            //}
-            //catch
-            //{
-            //    MessageBox.Show("Неверный файл или строка");
-            //}        
+            }
+            catch
+            {
+                MessageBox.Show("Неверный файл или строка");
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
