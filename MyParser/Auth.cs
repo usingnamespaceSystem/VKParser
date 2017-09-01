@@ -1,13 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using VkNet;
 using VkNet.Enums.Filters;
@@ -54,8 +46,8 @@ namespace MyParser
             Api.Authorize(new ApiAuthParams
             {
                 ApplicationId = 6169126,
-                Login = "faust_32@inbox.ru",
-                Password = "553861p",
+                Login = login,
+                Password = pwd,
                 Settings = Settings.All,
                 //TwoFactorAuthorization = code
             });

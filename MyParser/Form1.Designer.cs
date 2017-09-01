@@ -48,6 +48,8 @@
             // 
             // login
             // 
+            this.login.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+            this.login.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.CustomSource;
             this.login.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.login.Location = new System.Drawing.Point(52, 19);
             this.login.Name = "login";
@@ -79,6 +81,7 @@
             this.pwd.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.pwd.Location = new System.Drawing.Point(52, 45);
             this.pwd.Name = "pwd";
+            this.pwd.PasswordChar = '*';
             this.pwd.Size = new System.Drawing.Size(143, 13);
             this.pwd.TabIndex = 2;
             // 
@@ -206,6 +209,7 @@
             this.Name = "Form1";
             this.Text = "MyParser";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Form_MouseDown);
             this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Form_MouseMove);
             this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Form_MouseUp);

@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+﻿using Microsoft.Office.Core;
+using Microsoft.Office.Interop.Excel;
+using System;
+using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
+using System.IO;
+using System.Net;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using VkNet;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model.RequestParams;
-using Microsoft.Office.Interop.Excel;
-using System.Net;
-using Microsoft.Office.Core;
-using System.IO;
-using System.Diagnostics;
+using System.Linq;
 
 namespace MyParser
 {
@@ -34,9 +29,11 @@ namespace MyParser
         Microsoft.Office.Interop.Excel.Application app;
         Workbook wb;
         Worksheet ws;
+        AutoCompleteStringCollection autoComplete = new AutoCompleteStringCollection();
 
         private void auth_Click(object sender, EventArgs e)
         {
+            autoComplete.Add(login.Text);
             try
             {
                 Auth logIn = new Auth(login.Text, pwd.Text);
@@ -53,7 +50,7 @@ namespace MyParser
         }
 
         private void download_Click(object sender, EventArgs e)
-        {
+        { 
             try
             {
                 Regex uri = new Regex(@".+_(\d+)");
@@ -140,7 +137,10 @@ namespace MyParser
                     }
 
                     ws.Rows[1].EntireRow.AutoFit();
+                    wb.Save();
+                    wb.Activate();
                 }
+                app.Visible = true;
             }
             catch
             {
@@ -152,6 +152,14 @@ namespace MyParser
         {
             try
             {
+                using(StreamWriter tw = new StreamWriter(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ParserHistory.prs")))
+                {
+                    foreach (string s in autoComplete)
+                    {
+                        tw.WriteLine(s);
+                    }
+                }
+
                 foreach (var process in Process.GetProcessesByName("EXCEL"))
                 {
                     process.Kill();
@@ -164,16 +172,21 @@ namespace MyParser
         {
             foreach (var shape in app.ActiveSheet.Shapes)
                 shape.Delete();
-
-            wb.Save();
-            wb.Close(0);
-            app.Quit();
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(app);
         }
 
         private void close_button_Click(object sender, EventArgs e)
         {
-           System.Windows.Forms.Application.Exit();
+            try
+            {
+                wb.Close(0);
+                app.Quit();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(app);
+                System.Windows.Forms.Application.Exit();
+            }
+            catch
+            {
+                System.Windows.Forms.Application.Exit();
+            }
         }
 
         private void roll_button_Click(object sender, EventArgs e)
@@ -200,6 +213,28 @@ namespace MyParser
         private void Form_MouseUp(object sender, MouseEventArgs e)
         {
             isDragging = false;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            string path_to_file = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ParserHistory.prs");
+
+            if (File.Exists(path_to_file))
+            {
+                using (StreamReader tw = new StreamReader(path_to_file))
+                {
+                    string content = tw.ReadToEnd();
+                    string[] strings = content.Split('\n');
+                    string[] strings_wo_dups = strings.Distinct().ToArray();
+
+                    autoComplete.AddRange(strings_wo_dups);
+                }
+
+                login.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                login.AutoCompleteSource = AutoCompleteSource.CustomSource;
+                login.AutoCompleteCustomSource = autoComplete;
+            }
+            else File.Create(path_to_file);
         }
     }
 }
