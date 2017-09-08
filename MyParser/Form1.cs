@@ -49,6 +49,7 @@ namespace MyParser
             }
         }
 
+
         private void download_Click(object sender, EventArgs e)
         { 
             try
@@ -219,7 +220,9 @@ namespace MyParser
         {
             string path_to_file = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ParserHistory.prs");
 
-            if (File.Exists(path_to_file))
+            if (!File.Exists(path_to_file))
+                File.Create(path_to_file);
+            else
             {
                 using (StreamReader tw = new StreamReader(path_to_file))
                 {
@@ -234,7 +237,6 @@ namespace MyParser
                 login.AutoCompleteSource = AutoCompleteSource.CustomSource;
                 login.AutoCompleteCustomSource = autoComplete;
             }
-            else File.Create(path_to_file);
         }
     }
 }
