@@ -49,6 +49,7 @@ namespace MyParser
             }
         }
 
+
         private void download_Click(object sender, EventArgs e)
         { 
             try
@@ -156,7 +157,6 @@ namespace MyParser
                 {
                     foreach (string s in autoComplete)
                     {
-                        MessageBox.Show(s);
                         tw.WriteLine(s);
                     }
                 }
@@ -222,19 +222,21 @@ namespace MyParser
 
             if (!File.Exists(path_to_file))
                 File.Create(path_to_file);
-            
-            using (StreamReader tw = new StreamReader(path_to_file))
+            else
             {
-                string content = tw.ReadToEnd();
-                string[] strings = content.Split('\n');
-                string[] strings_wo_dups = strings.Distinct().ToArray();
+                using (StreamReader tw = new StreamReader(path_to_file))
+                {
+                    string content = tw.ReadToEnd();
+                    string[] strings = content.Split('\n');
+                    string[] strings_wo_dups = strings.Distinct().ToArray();
 
-                autoComplete.AddRange(strings_wo_dups);
+                    autoComplete.AddRange(strings_wo_dups);
+                }
+
+                login.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                login.AutoCompleteSource = AutoCompleteSource.CustomSource;
+                login.AutoCompleteCustomSource = autoComplete;
             }
-
-            login.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            login.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            login.AutoCompleteCustomSource = autoComplete;
         }
     }
 }
