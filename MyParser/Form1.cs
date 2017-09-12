@@ -12,6 +12,7 @@ using VkNet.Enums.SafetyEnums;
 using VkNet.Model.RequestParams;
 using System.Linq;
 
+
 namespace MyParser
 {
     public partial class Form1 : Form
@@ -34,24 +35,27 @@ namespace MyParser
         private void auth_Click(object sender, EventArgs e)
         {
             autoComplete.Add(login.Text);
-            try
-            {
+            //try
+            //{
                 Auth logIn = new Auth(login.Text, pwd.Text);
-                Api = logIn.Api;
+            Api = logIn.Api;
 
-                panel_auth.Visible = false;
-                panel_parse.Location = new System.Drawing.Point(200, 131);
-                panel_parse.Visible = true;
-            }
-            catch
-            {
-                MessageBox.Show("Ошибка при входе");
-            }
+            panel_auth.Visible = false;
+            panel_parse.Location = new System.Drawing.Point(200, 131);
+            panel_parse.Visible = true;
+            //}
+            //catch
+            //{
+            //    MessageBox.Show("Ошибка при входе");
+            //}
         }
 
 
         private void download_Click(object sender, EventArgs e)
-        { 
+        {
+            if (Api == null)
+                return;
+
             try
             {
                 Regex uri = new Regex(@".+_(\d+)");
@@ -68,11 +72,6 @@ namespace MyParser
                     app = new Microsoft.Office.Interop.Excel.Application();
                     wb = app.Workbooks.Open(path);
                     ws = wb.Worksheets[1];
-
-                    while (ws.Cells[rowIdx, 2].Value != null)
-                    {
-                        rowIdx++;
-                    }
 
                     for (int i = 1; i < 20; i++)
                     {
@@ -95,6 +94,10 @@ namespace MyParser
                             desc_col = i;
                     }
 
+                    while (ws.Cells[rowIdx, id_col].Value != null)
+                    {
+                        rowIdx++;
+                    }
                     var photos_in_album = Api.Photo.Get(new PhotoGetParams
                     {
                         AlbumId = PhotoAlbumType.Id(Convert.ToInt64(album_id))
@@ -106,54 +109,75 @@ namespace MyParser
 
                     foreach (var photo in photos_in_album)
                     {
-                        if (count > 5) return;
-
-                        string[] all_description = new string[2];
-                        all_description = photo.Text.Split(new string[] { "\n" }, StringSplitOptions.None);
-                        Regex price = new Regex(@"(\d+)р.");
-                        string opt = price.Matches(all_description[0])[0].Groups[1].ToString();
-                        string rozn = price.Matches(all_description[1])[0].Groups[1].ToString();
-                        string description = all_description[2];
-
-                        ws.Rows[rowIdx].EntireRow.RowHeight = ws.Rows[2].EntireRow.RowHeight;
-
-                        using (WebClient client = new WebClient())
+                        try
                         {
-                            string path_to_image = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), rowIdx.ToString() + ".jpg");
-                            client.DownloadFile(new Uri(photo.Photo604.ToString()), path_to_image);
+                            if (count > 5) return;
 
-                            ws.Shapes.AddPicture(path_to_image, MsoTriState.msoFalse, MsoTriState.msoCTrue, ws.Columns[img_col].Left, (rowIdx - 1) * ws.Rows[2].EntireRow.RowHeight + 2, photo.Width / (photo.Height / ws.Rows[2].EntireRow.RowHeight), ws.Rows[2].EntireRow.RowHeight - 2);
+                            string[] all_description = new string[2];
+                            all_description = photo.Text.Split(new string[] { "\n" }, StringSplitOptions.None);
+                            Regex o_price = new Regex(@".+пт (\d+)р.");
+                            Regex r_price = new Regex(@".+оз (\d+)р.");
+                            string opt = o_price.Matches(all_description[0])[0].Groups[1].ToString();
+                            string rozn = r_price.Matches(all_description[0])[0].Groups[1].ToString();
+                            string description = string.Empty;
 
-                            if (File.Exists(path_to_image))
-                                File.Delete(path_to_image);
+                            for (int i = 1; i < all_description.Length; i++)
+                            {
+                                description += all_description[i];
+                            }
+
+                            ws.Rows[rowIdx].EntireRow.RowHeight = ws.Rows[2].EntireRow.RowHeight;
+
+                            using (WebClient client = new WebClient())
+                            {
+                                string path_to_image = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), rowIdx.ToString() + ".jpg");
+                                client.DownloadFile(new Uri(photo.Photo604.ToString()), path_to_image);
+
+                                ws.Shapes.AddPicture(path_to_image, MsoTriState.msoFalse, MsoTriState.msoCTrue, ws.Columns[img_col].Left, (rowIdx - 1) * ws.Rows[2].EntireRow.RowHeight + 2, photo.Width / (photo.Height / ws.Rows[2].EntireRow.RowHeight), ws.Rows[2].EntireRow.RowHeight - 2);
+
+                                if (File.Exists(path_to_image))
+                                    File.Delete(path_to_image);
+                            }
+
+                            ws.Cells[rowIdx, id_col] = Convert.ToInt32(ws.Cells[rowIdx - 1, id_col].Value) + 1;
+                            ws.Cells[rowIdx, url_col] = photo.Photo604.ToString();
+                            ws.Cells[rowIdx, opt_col] = opt;
+                            ws.Cells[rowIdx, rozn_col] = rozn;
+                            ws.Cells[rowIdx, desc_col] = description;
+                            rowIdx++;
+                            count++;
+
                         }
-
-                        ws.Cells[rowIdx, id_col] = Convert.ToInt32(ws.Cells[rowIdx - 1, id_col].Value) + 1;
-                        ws.Cells[rowIdx, url_col] = photo.Photo604.ToString();
-                        ws.Cells[rowIdx, opt_col] = opt;
-                        ws.Cells[rowIdx, rozn_col] = rozn;
-                        ws.Cells[rowIdx, desc_col] = description;
-                        rowIdx++;
-                        count++;
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            MessageBox.Show("Описание не подходит под шаблон");
+                            continue;
+                        }
                     }
 
                     ws.Rows[1].EntireRow.AutoFit();
-                    wb.Save();
-                    wb.Activate();
-                }
+                        wb.Save();
+                        wb.Activate();
+                    }
+
                 app.Visible = true;
             }
-            catch
+
+            catch (WebException)
             {
-                MessageBox.Show("Неверный файл или строка");
+                MessageBox.Show("Разрыв соединения");
             }
+            //catch
+            //{
+            //    MessageBox.Show("Неверный файл или строка");
+            //}
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             try
             {
-                using(StreamWriter tw = new StreamWriter(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ParserHistory.prs")))
+                using (StreamWriter tw = new StreamWriter(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ParserHistory.prs")))
                 {
                     foreach (string s in autoComplete)
                     {
@@ -165,6 +189,12 @@ namespace MyParser
                 {
                     process.Kill();
                 }
+
+                if (File.Exists("./captcha.jpg"))
+                    File.Delete("./captcha.jpg");
+
+                if (File.Exists("./captcha_new.jpg"))
+                    File.Delete("./captcha_new.jpg");
             }
             catch { }
         }
