@@ -35,19 +35,13 @@ namespace MyParser
         private void auth_Click(object sender, EventArgs e)
         {
             autoComplete.Add(login.Text);
-            //try
-            //{
-                Auth logIn = new Auth(login.Text, pwd.Text);
+
+            Auth logIn = new Auth(login.Text, pwd.Text);         
             Api = logIn.Api;
 
             panel_auth.Visible = false;
             panel_parse.Location = new System.Drawing.Point(200, 131);
             panel_parse.Visible = true;
-            //}
-            //catch
-            //{
-            //    MessageBox.Show("Ошибка при входе");
-            //}
         }
 
 
@@ -65,13 +59,24 @@ namespace MyParser
                 string path;
 
                 int rowIdx = 1, id_col = 0, opt_col = 0, rozn_col = 0, desc_col = 0, img_col = 0, url_col = 0;
+                string opt = string.Empty, rozn = string.Empty;
 
                 if (fd.ShowDialog(this) == DialogResult.OK)
                 {
                     path = fd.InitialDirectory + fd.FileName;
-                    app = new Microsoft.Office.Interop.Excel.Application();
-                    wb = app.Workbooks.Open(path);
-                    ws = wb.Worksheets[1];
+
+                    try
+                    {
+                        app = new Microsoft.Office.Interop.Excel.Application();
+                        wb = app.Workbooks.Open(path);
+                        ws = wb.Worksheets[1];
+                    }
+
+                    catch
+                    {
+                        MessageBox.Show("Произошел сбой программы Excel, повторите попытку");
+                        return;
+                    }
 
                     for (int i = 1; i < 20; i++)
                     {
@@ -94,14 +99,32 @@ namespace MyParser
                             desc_col = i;
                     }
 
+                    if (img_col == 0 || url_col == 0 || id_col == 0 || opt_col == 0 || rozn_col == 0 || desc_col == 0)
+                    {
+                        MessageBox.Show("Не найден один из заголовков, проверьте правильность заполнения Excel-файла");
+                        return;
+                    }
+
                     while (ws.Cells[rowIdx, id_col].Value != null)
                     {
                         rowIdx++;
                     }
-                    var photos_in_album = Api.Photo.Get(new PhotoGetParams
+
+                    VkNet.Utils.VkCollection<VkNet.Model.Attachments.Photo> photos_in_album;
+
+                    try
                     {
-                        AlbumId = PhotoAlbumType.Id(Convert.ToInt64(album_id))
-                    });
+                        photos_in_album = Api.Photo.Get(new PhotoGetParams
+                        {
+                            AlbumId = PhotoAlbumType.Id(Convert.ToInt64(album_id))
+                        });
+                    }
+
+                    catch
+                    {
+                        MessageBox.Show("Произошел сбой при загрузке фото, повторите попытку");
+                        return;
+                    }
 
                     ws.Rows[1].EntireRow.RowHeight = ws.Rows[2].EntireRow.RowHeight;
 
@@ -115,10 +138,19 @@ namespace MyParser
 
                             string[] all_description = new string[2];
                             all_description = photo.Text.Split(new string[] { "\n" }, StringSplitOptions.None);
-                            Regex o_price = new Regex(@".+пт (\d+)р.");
-                            Regex r_price = new Regex(@".+оз (\d+)р.");
-                            string opt = o_price.Matches(all_description[0])[0].Groups[1].ToString();
-                            string rozn = r_price.Matches(all_description[0])[0].Groups[1].ToString();
+
+                            try
+                            {
+                                Regex o_price = new Regex(@".+пт (\d+)р.");
+                                Regex r_price = new Regex(@".+оз (\d+)р.");
+                                opt = o_price.Matches(all_description[0])[0].Groups[1].ToString();
+                                rozn = r_price.Matches(all_description[0])[0].Groups[1].ToString();
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Произошел сбой при поиске цены товара. Товар " + ws.Cells[rowIdx, id_col] + " добавлен без стоимости");
+                            }
+
                             string description = string.Empty;
 
                             for (int i = 1; i < all_description.Length; i++)
@@ -130,13 +162,20 @@ namespace MyParser
 
                             using (WebClient client = new WebClient())
                             {
-                                string path_to_image = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), rowIdx.ToString() + ".jpg");
-                                client.DownloadFile(new Uri(photo.Photo604.ToString()), path_to_image);
+                                try
+                                {
+                                    string path_to_image = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), rowIdx.ToString() + ".jpg");
+                                    client.DownloadFile(new Uri(photo.Photo604.ToString()), path_to_image);
 
-                                ws.Shapes.AddPicture(path_to_image, MsoTriState.msoFalse, MsoTriState.msoCTrue, ws.Columns[img_col].Left, (rowIdx - 1) * ws.Rows[2].EntireRow.RowHeight + 2, photo.Width / (photo.Height / ws.Rows[2].EntireRow.RowHeight), ws.Rows[2].EntireRow.RowHeight - 2);
+                                    ws.Shapes.AddPicture(path_to_image, MsoTriState.msoFalse, MsoTriState.msoCTrue, ws.Columns[img_col].Left, (rowIdx - 1) * ws.Rows[2].EntireRow.RowHeight + 2, photo.Width / (photo.Height / ws.Rows[2].EntireRow.RowHeight), ws.Rows[2].EntireRow.RowHeight - 2);
 
-                                if (File.Exists(path_to_image))
-                                    File.Delete(path_to_image);
+                                    if (File.Exists(path_to_image))
+                                        File.Delete(path_to_image);
+                                }
+                                catch
+                                {
+                                    MessageBox.Show("Произошел сбой при загрузке миниатюры. Товар " + ws.Cells[rowIdx, id_col] + " добавлен, но без миниатюры");
+                                }
                             }
 
                             ws.Cells[rowIdx, id_col] = Convert.ToInt32(ws.Cells[rowIdx - 1, id_col].Value) + 1;
@@ -146,6 +185,7 @@ namespace MyParser
                             ws.Cells[rowIdx, desc_col] = description;
                             rowIdx++;
                             count++;
+                            wb.Save();
 
                         }
                         catch (ArgumentOutOfRangeException)
@@ -156,8 +196,7 @@ namespace MyParser
                     }
 
                     ws.Rows[1].EntireRow.AutoFit();
-                        wb.Save();
-                        wb.Activate();
+                    wb.Activate();
                     }
 
                 app.Visible = true;
@@ -192,17 +231,18 @@ namespace MyParser
 
                 if (File.Exists("./captcha.jpg"))
                     File.Delete("./captcha.jpg");
-
-                if (File.Exists("./captcha_new.jpg"))
-                    File.Delete("./captcha_new.jpg");
             }
             catch { }
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            foreach (var shape in app.ActiveSheet.Shapes)
-                shape.Delete();
+            try
+            {
+                foreach (var shape in app.ActiveSheet.Shapes)
+                    shape.Delete();
+            }
+            catch { MessageBox.Show("Не удалось удалить миниатюры"); }
         }
 
         private void close_button_Click(object sender, EventArgs e)

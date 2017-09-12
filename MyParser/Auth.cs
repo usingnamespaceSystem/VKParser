@@ -4,7 +4,6 @@ using System.Net;
 using System.Windows.Forms;
 using VkNet;
 using VkNet.Enums.Filters;
-using ModernDev.InTouch.API;
 using System.IO;
 
 namespace MyParser
@@ -23,7 +22,6 @@ namespace MyParser
 
         VkApi Authentication(string login, string pwd)
         {
-            count_auth = 0;
             try
             {
                 Api = new VkApi();
@@ -37,15 +35,14 @@ namespace MyParser
                     Login = login,
                     Password = pwd
                 });
+                MessageBox.Show("Auth - " + Api.IsAuthorized.ToString());
             }
+
             catch (VkNet.Exception.CaptchaNeededException ex)
             {
-                var img = ex.Img;
-                WebClient wc = new WebClient();
-                wc.DownloadFile(new Uri(img.AbsoluteUri), "./captcha.jpg");
-                AuthCode captcha = new AuthCode(Api, login, pwd, ex.Sid);
-                captcha.Show();
-                Api = captcha.Api;
+
+                AuthCode captcha = new AuthCode(login, pwd, ex);
+                Api = captcha.Api;          
             }
 
             catch 
@@ -59,10 +56,8 @@ namespace MyParser
                 Authentication(login, pwd);
                 count_auth++;
             }
-
-            
-            return Api;
-            
+           
+            return Api;         
         }
     }
 }

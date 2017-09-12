@@ -228,14 +228,14 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox pwd;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Panel panel_auth;
         private System.Windows.Forms.TextBox AlbumName;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.Panel panel_parse;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button close_button;
         private System.Windows.Forms.Button roll_button;
+        public System.Windows.Forms.Panel panel_auth;
+        public System.Windows.Forms.Panel panel_parse;
     }
 }
 

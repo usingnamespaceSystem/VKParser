@@ -3,24 +3,36 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
+using VkNet.Exception;
 
 namespace MyParser
 {
     public partial class AuthCode : Form
     {
-        public AuthCode(VkNet.VkApi api, string login, string pwd, long? sid)
+        public AuthCode(string login, string pwd, CaptchaNeededException ex)
         {
-            InitializeComponent();
-
-            if (File.Exists("./captcha.jpg"))
-                pictureBox1.Image = Image.FromFile("./captcha.jpg");
-            else
-                pictureBox1.Image = Image.FromFile("./captcha_new.jpg");
+            InitializeComponent();      
 
             Api = new VkNet.VkApi();
             Login = login;
             Pwd = pwd;
-            Sid = sid;
+            Ex = ex;
+
+            var img = Ex.Img;
+            WebClient wc = new WebClient();
+
+            try
+            {
+                wc.DownloadFile(new Uri(img.AbsoluteUri), "./captcha.jpg");
+                wc.Dispose();
+            }
+            catch(Exception ee)
+            {
+                MessageBox.Show( ee.Message);
+                return;
+            }
+            pictureBox1.Image = Image.FromFile("./captcha.jpg");
+            this.Show();
         }
 
         public string Code { get; set; }
@@ -29,7 +41,7 @@ namespace MyParser
         private Point lastCursor;
         private Point lastForm;
         string Login = string.Empty, Pwd = string.Empty;
-        long? Sid;
+        CaptchaNeededException Ex;
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -41,25 +53,32 @@ namespace MyParser
                     ApplicationId = 6169126,
                     Settings = VkNet.Enums.Filters.Settings.All,
                     CaptchaKey = Code,
-                    CaptchaSid = Sid,
+                    CaptchaSid = Ex.Sid,
                     Host = "91.73.131.254",
                     Port = 8080,
                     Login = Login,
                     Password = Pwd
                 });
+
+                Form1 form1 = new Form1();
+                form1.panel_auth.Visible = false;
+                form1.panel_parse.Location = new System.Drawing.Point(200, 131);
+                form1.panel_parse.Visible = true;
+
                 Close();
             }
-            catch (VkNet.Exception.CaptchaNeededException ex)
+
+            catch (Exception ee)
             {
-                var img = ex.Img;
-                WebClient wc = new WebClient();
-                wc.DownloadFile(new Uri(img.AbsoluteUri), "./captcha_new.jpg");
-                AuthCode captcha = new AuthCode(Api, Login, Pwd, ex.Sid);
-                captcha.Show();
-                Api = captcha.Api;
+                //MessageBox.Show("Произошла ошибка: " + ee.Message);
+                this.pictureBox1.Image.Dispose();
+                this.pictureBox1.Image = null ;
                 Close();
+                File.Delete("./captcha.jpg");
+                AuthCode captcha = new AuthCode(Login, Pwd, Ex);
+                Api = captcha.Api;
+                
             }
-            catch{}
         }
 
         private void close_button_Click(object sender, EventArgs e)
