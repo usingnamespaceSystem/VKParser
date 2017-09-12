@@ -58,14 +58,7 @@ namespace MyParser
                     Port = 8080,
                     Login = Login,
                     Password = Pwd
-                });
-
-                Form1 form1 = new Form1();
-                form1.panel_auth.Visible = false;
-                form1.panel_parse.Location = new System.Drawing.Point(200, 131);
-                form1.panel_parse.Visible = true;
-
-                Close();
+                });                         
             }
 
             catch (Exception ee)
@@ -76,9 +69,16 @@ namespace MyParser
                 Close();
                 File.Delete("./captcha.jpg");
                 AuthCode captcha = new AuthCode(Login, Pwd, Ex);
+                captcha.Owner = this.Owner;
                 Api = captcha.Api;
                 
             }
+
+            ((Form1)Application.OpenForms[0]).panel_auth.Visible = false;
+            ((Form1)Application.OpenForms[0]).panel_parse.Location = new System.Drawing.Point(200, 131);
+            ((Form1)Application.OpenForms[0]).panel_parse.Visible = true;
+
+            Close();
         }
 
         private void close_button_Click(object sender, EventArgs e)

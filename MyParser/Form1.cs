@@ -38,10 +38,10 @@ namespace MyParser
 
             Auth logIn = new Auth(login.Text, pwd.Text);         
             Api = logIn.Api;
-
-            panel_auth.Visible = false;
-            panel_parse.Location = new System.Drawing.Point(200, 131);
-            panel_parse.Visible = true;
+            
+            //panel_auth.Visible = false;
+            //panel_parse.Location = new System.Drawing.Point(200, 131);
+            //panel_parse.Visible = true;
         }
 
 

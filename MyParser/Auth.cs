@@ -40,8 +40,7 @@ namespace MyParser
 
             catch (VkNet.Exception.CaptchaNeededException ex)
             {
-
-                AuthCode captcha = new AuthCode(login, pwd, ex);
+                AuthCode captcha = new AuthCode(login, pwd, ex);           
                 Api = captcha.Api;          
             }
 
